@@ -3,9 +3,16 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-<title>Daily Planner - Edit & Notifications</title>
+<title>Daily Planner - PWA Ready</title>
+
+<!-- Manifest for PWA -->
+<link rel="manifest" href="manifest.json" />
+
+<meta name="theme-color" content="#4e73f8" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+
 <style>
-  /* Same styles as before with minor additions for edit input */
   *, *::before, *::after { box-sizing: border-box; }
   body {
     margin: 0;
@@ -18,6 +25,7 @@
     align-items: center;
     padding: 20px 12px;
     transition: background 0.3s, color 0.3s;
+    -webkit-tap-highlight-color: transparent;
   }
 
   :root {
@@ -111,8 +119,10 @@
     box-shadow: 0 6px 14px rgba(78, 115, 248, 0.5);
     transition: background 0.3s, box-shadow 0.3s;
     user-select: none;
+    touch-action: manipulation;
   }
-  button:hover:not(:disabled) {
+  button:hover:not(:disabled),
+  button:focus-visible:not(:disabled) {
     background: var(--btn-bg-hover);
     box-shadow: 0 8px 20px rgba(60, 89, 209, 0.7);
   }
@@ -126,7 +136,8 @@
     background: var(--remove-btn);
     box-shadow: 0 6px 14px rgba(255, 107, 107, 0.5);
   }
-  #clear-all-btn:hover {
+  #clear-all-btn:hover,
+  #clear-all-btn:focus-visible {
     background: #e94a4a;
     box-shadow: 0 8px 20px rgba(233, 74, 74, 0.7);
   }
@@ -142,8 +153,10 @@
     border-radius: 20px;
     padding: 14px 0;
     user-select: none;
+    touch-action: manipulation;
   }
-  #dark-toggle:hover {
+  #dark-toggle:hover,
+  #dark-toggle:focus-visible {
     background: var(--btn-bg);
     color: #fff;
   }
@@ -155,6 +168,7 @@
     max-height: 320px;
     overflow-y: auto;
     padding-right: 6px;
+    -webkit-overflow-scrolling: touch;
   }
   #task-list::-webkit-scrollbar {
     width: 6px;
@@ -175,7 +189,8 @@
     user-select: none;
     transition: background 0.3s;
   }
-  .task:hover {
+  .task:hover,
+  .task:focus-within {
     background: var(--task-hover);
   }
   .task-time {
@@ -209,17 +224,21 @@
     padding: 4px 8px;
     transition: color 0.2s;
     user-select: none;
+    flex-shrink: 0;
+    touch-action: manipulation;
   }
   .remove-btn {
     color: var(--remove-btn);
   }
-  .remove-btn:hover {
+  .remove-btn:hover,
+  .remove-btn:focus-visible {
     color: #e94a4a;
   }
   .edit-btn {
     color: var(--edit-btn);
   }
-  .edit-btn:hover {
+  .edit-btn:hover,
+  .edit-btn:focus-visible {
     color: #1a82ff;
   }
 
@@ -231,9 +250,29 @@
     user-select: none;
   }
 
-  @media (max-width: 400px) {
-    input[type="time"] {
-      width: 100px;
+  @media (max-width: 480px) {
+    .input-group {
+      flex-direction: column;
+      gap: 12px;
+    }
+    input[type="time"],
+    input.edit-time {
+      width: 100%;
+    }
+    input[type="text"],
+    input.edit-desc {
+      width: 100%;
+    }
+    button {
+      font-size: 1.1rem;
+      padding: 14px 0;
+    }
+    .task-time {
+      min-width: 60px;
+      font-size: 1rem;
+    }
+    .task-desc {
+      font-size: 1rem;
     }
   }
 </style>
@@ -248,14 +287,16 @@
       <input type="text" id="task-desc" placeholder="Add a new task..." aria-label="Task description" />
     </div>
     <button id="add-task-btn" aria-label="Add task button">Add Task</button>
-    <button id="random-task-btn" aria-label="Generate random tasks">Generate Random Tasks 🎲</button>
+    <button id="random-task-btn" aria-label="Add random sample tasks">Add Sample Tasks</button>
     <button id="clear-all-btn" aria-label="Clear all tasks">Clear All Tasks</button>
 
-    <div id="task-list" aria-live="polite" aria-relevant="additions removals"></div>
-    <div class="stats" id="task-stats" aria-live="polite"></div>
+    <div id="task-list" role="list" aria-live="polite" aria-relevant="additions removals"></div>
+
+    <p class="stats" aria-live="polite" id="stats"></p>
   </div>
 
 <script>
+  // Dark Mode Toggle
   const darkToggleBtn = document.getElementById('dark-toggle');
   darkToggleBtn.addEventListener('click', () => {
     document.body.classList.toggle('dark');
@@ -263,163 +304,163 @@
     darkToggleBtn.setAttribute('aria-pressed', isDark);
   });
 
-  let tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+  // Tasks Data and Render Logic
+  let tasks = JSON.parse(localStorage.getItem('dailyPlannerTasks') || '[]');
+
+  const taskList = document.getElementById('task-list');
+  const stats = document.getElementById('stats');
 
   function saveTasks() {
-    localStorage.setItem('tasks', JSON.stringify(tasks));
-  }
-
-  function renderTasks() {
-    const list = document.getElementById('task-list');
-    list.innerHTML = '';
-    tasks.forEach((task, idx) => {
-      const div = document.createElement('div');
-      div.className = 'task' + (task.completed ? ' completed' : '');
-      div.dataset.index = idx;
-
-      // If editing this task, show inputs, else normal view
-      if(task.editing) {
-        const editTimeInput = document.createElement('input');
-        editTimeInput.type = 'time';
-        editTimeInput.className = 'edit-time';
-        editTimeInput.value = task.time || '';
-        editTimeInput.setAttribute('aria-label', 'Edit task time');
-
-        const editDescInput = document.createElement('input');
-        editDescInput.type = 'text';
-        editDescInput.className = 'edit-desc';
-        editDescInput.value = task.desc;
-        editDescInput.setAttribute('aria-label', 'Edit task description');
-
-        // Save button
-        const saveBtn = document.createElement('button');
-        saveBtn.className = 'edit-btn';
-        saveBtn.textContent = '💾';
-        saveBtn.title = 'Save changes';
-        saveBtn.setAttribute('aria-label', 'Save edited task');
-        saveBtn.addEventListener('click', () => {
-          const newTime = editTimeInput.value.trim();
-          const newDesc = editDescInput.value.trim();
-          if(!newTime || !newDesc) {
-            alert('Time and description cannot be empty!');
-            return;
-          }
-          tasks[idx].time = newTime;
-          tasks[idx].desc = newDesc;
-          tasks[idx].editing = false;
-          saveTasks();
-          renderTasks();
-          scheduleNotifications(); // refresh notifications
-        });
-
-        // Cancel button
-        const cancelBtn = document.createElement('button');
-        cancelBtn.className = 'remove-btn';
-        cancelBtn.textContent = '✕';
-        cancelBtn.title = 'Cancel editing';
-        cancelBtn.setAttribute('aria-label', 'Cancel editing task');
-        cancelBtn.addEventListener('click', () => {
-          tasks[idx].editing = false;
-          renderTasks();
-        });
-
-        div.appendChild(editTimeInput);
-        div.appendChild(editDescInput);
-        div.appendChild(saveBtn);
-        div.appendChild(cancelBtn);
-      } else {
-        const timeSpan = document.createElement('span');
-        timeSpan.className = 'task-time';
-        timeSpan.textContent = task.time || '--:--';
-        timeSpan.title = 'Click to mark completed';
-        timeSpan.tabIndex = 0;
-        timeSpan.addEventListener('click', () => toggleCompleted(idx));
-        timeSpan.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter') toggleCompleted(idx);
-        });
-
-        const descSpan = document.createElement('span');
-        descSpan.className = 'task-desc';
-        descSpan.textContent = task.desc;
-        descSpan.title = 'Click to mark completed';
-        descSpan.tabIndex = 0;
-        descSpan.addEventListener('click', () => toggleCompleted(idx));
-        descSpan.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter') toggleCompleted(idx);
-        });
-
-        // Edit button
-        const editBtn = document.createElement('button');
-        editBtn.className = 'edit-btn';
-        editBtn.textContent = '✎';
-        editBtn.title = 'Edit task';
-        editBtn.setAttribute('aria-label', `Edit task ${task.desc}`);
-        editBtn.addEventListener('click', () => {
-          tasks[idx].editing = true;
-          renderTasks();
-        });
-
-        const removeBtn = document.createElement('button');
-        removeBtn.className = 'remove-btn';
-        removeBtn.textContent = '✕';
-        removeBtn.setAttribute('aria-label', `Remove task ${task.desc}`);
-        removeBtn.addEventListener('click', () => removeTask(idx));
-
-        div.appendChild(timeSpan);
-        div.appendChild(descSpan);
-        div.appendChild(editBtn);
-        div.appendChild(removeBtn);
-      }
-
-      list.appendChild(div);
-    });
-
-    updateStats();
+    localStorage.setItem('dailyPlannerTasks', JSON.stringify(tasks));
   }
 
   function updateStats() {
-    const stats = document.getElementById('task-stats');
     const total = tasks.length;
     const completed = tasks.filter(t => t.completed).length;
-    stats.textContent = `Tasks: ${total} | Completed: ${completed}`;
+    stats.textContent = `Total Tasks: ${total} | Completed: ${completed}`;
   }
 
-  function addTask() {
-    const timeInput = document.getElementById('task-time');
-    const descInput = document.getElementById('task-desc');
-    const time = timeInput.value.trim();
-    const desc = descInput.value.trim();
-    if (!time || !desc) {
-      alert('Please enter both time and description for the task.');
+  function renderTasks() {
+    taskList.innerHTML = '';
+    tasks.forEach((task, i) => {
+      const taskEl = document.createElement('div');
+      taskEl.className = 'task' + (task.completed ? ' completed' : '');
+      taskEl.setAttribute('role', 'listitem');
+      taskEl.setAttribute('tabindex', '0');
+
+      // Time or Edit Time input
+      let timeEl;
+      if(task.editing){
+        timeEl = document.createElement('input');
+        timeEl.type = 'time';
+        timeEl.value = task.time;
+        timeEl.className = 'edit-time';
+        timeEl.setAttribute('aria-label', 'Edit task time');
+      } else {
+        timeEl = document.createElement('div');
+        timeEl.textContent = task.time;
+        timeEl.className = 'task-time';
+        timeEl.setAttribute('tabindex', '0');
+        timeEl.setAttribute('aria-label', `Task time ${task.time}`);
+        timeEl.addEventListener('click', () => toggleComplete(i));
+        timeEl.addEventListener('keypress', e => { if(e.key === 'Enter') toggleComplete(i); });
+      }
+      taskEl.appendChild(timeEl);
+
+      // Desc or Edit Desc input
+      let descEl;
+      if(task.editing){
+        descEl = document.createElement('input');
+        descEl.type = 'text';
+        descEl.value = task.desc;
+        descEl.className = 'edit-desc';
+        descEl.setAttribute('aria-label', 'Edit task description');
+      } else {
+        descEl = document.createElement('div');
+        descEl.textContent = task.desc;
+        descEl.className = 'task-desc';
+        descEl.setAttribute('tabindex', '0');
+        descEl.setAttribute('aria-label', `Task description: ${task.desc}`);
+        descEl.addEventListener('click', () => toggleComplete(i));
+        descEl.addEventListener('keypress', e => { if(e.key === 'Enter') toggleComplete(i); });
+      }
+      taskEl.appendChild(descEl);
+
+      // Edit/Save or Cancel buttons
+      const editBtn = document.createElement('button');
+      editBtn.className = 'edit-btn';
+      if(task.editing){
+        editBtn.textContent = '💾'; // Save
+        editBtn.setAttribute('aria-label', 'Save task');
+        editBtn.addEventListener('click', () => saveEdit(i, timeEl.value, descEl.value));
+      } else {
+        editBtn.textContent = '✎'; // Edit
+        editBtn.setAttribute('aria-label', 'Edit task');
+        editBtn.addEventListener('click', () => startEdit(i));
+      }
+      taskEl.appendChild(editBtn);
+
+      if(task.editing){
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'remove-btn';
+        cancelBtn.textContent = '✕'; // Cancel edit
+        cancelBtn.setAttribute('aria-label', 'Cancel editing task');
+        cancelBtn.addEventListener('click', () => cancelEdit(i));
+        taskEl.appendChild(cancelBtn);
+      } else {
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'remove-btn';
+        removeBtn.textContent = '🗑';
+        removeBtn.setAttribute('aria-label', 'Remove task');
+        removeBtn.addEventListener('click', () => removeTask(i));
+        taskEl.appendChild(removeBtn);
+      }
+
+      taskList.appendChild(taskEl);
+    });
+    updateStats();
+  }
+
+  function toggleComplete(index){
+    if(tasks[index].editing) return; // disable toggling during edit
+    tasks[index].completed = !tasks[index].completed;
+    saveTasks();
+    renderTasks();
+    scheduleNotifications();
+  }
+  function startEdit(index){
+    tasks.forEach((t,i) => t.editing = (i === index));
+    renderTasks();
+  }
+  function saveEdit(index, newTime, newDesc){
+    if(!newTime || !newDesc.trim()){
+      alert('Please fill both time and description');
       return;
     }
-    tasks.push({ time, desc, completed: false, editing: false });
+    tasks[index].time = newTime;
+    tasks[index].desc = newDesc.trim();
+    tasks[index].editing = false;
     saveTasks();
     renderTasks();
+    scheduleNotifications();
+  }
+  function cancelEdit(index){
+    tasks[index].editing = false;
+    renderTasks();
+  }
+  function removeTask(index){
+    if(confirm('Remove this task?')) {
+      tasks.splice(index, 1);
+      saveTasks();
+      renderTasks();
+      scheduleNotifications();
+    }
+  }
+
+  function addTask(){
+    const timeInput = document.getElementById('task-time');
+    const descInput = document.getElementById('task-desc');
+
+    if(!timeInput.value || !descInput.value.trim()){
+      alert('Please enter both time and task description.');
+      return;
+    }
+    tasks.push({
+      time: timeInput.value,
+      desc: descInput.value.trim(),
+      completed: false,
+      editing: false
+    });
+    saveTasks();
+    renderTasks();
+    scheduleNotifications();
     timeInput.value = '';
     descInput.value = '';
-    timeInput.focus();
-    scheduleNotifications();
-  }
-
-  function removeTask(idx) {
-    tasks.splice(idx, 1);
-    saveTasks();
-    renderTasks();
-    scheduleNotifications();
-  }
-
-  function toggleCompleted(idx) {
-    tasks[idx].completed = !tasks[idx].completed;
-    saveTasks();
-    renderTasks();
   }
 
   const sampleTasks = [
-    { time: '09:00', desc: 'Morning workout', completed: false, editing: false },
-    { time: '10:30', desc: 'Team meeting', completed: false, editing: false },
-    { time: '12:00', desc: 'Lunch with friend', completed: false, editing: false },
-    { time: '14:00', desc: 'Project work', completed: false, editing: false },
+    { time: '09:00', desc: 'Morning meditation', completed: false, editing: false },
+    { time: '11:00', desc: 'Project work', completed: false, editing: false },
     { time: '16:30', desc: 'Call client', completed: false, editing: false },
     { time: '18:00', desc: 'Evening walk', completed: false, editing: false },
     { time: '20:00', desc: 'Read a book', completed: false, editing: false },
@@ -443,10 +484,10 @@
     }
   });
 
-  // Notification stuff
+  // Notifications
   function requestNotificationPermission() {
     if (!("Notification" in window)) {
-      alert("This browser does not support desktop notifications.");
+      alert("This browser does not support notifications.");
       return;
     }
     if (Notification.permission === "default") {
@@ -459,8 +500,7 @@
   }
 
   function scheduleNotifications() {
-    // Clear all existing timeouts (not perfect but good enough for demo)
-    if(window.notificationTimeouts) {
+    if(window.notificationTimeouts){
       window.notificationTimeouts.forEach(id => clearTimeout(id));
     }
     window.notificationTimeouts = [];
@@ -478,11 +518,10 @@
       const taskTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes);
       const notifyTime = new Date(taskTime.getTime() - 60000); // 1 min before
 
-      if(notifyTime <= now) return; // skip past or immediate tasks
+      if(notifyTime <= now) return;
 
       const delay = notifyTime.getTime() - now.getTime();
 
-      // Schedule notification
       const timeoutId = setTimeout(() => {
         new Notification("Upcoming Task", {
           body: `${task.time} - ${task.desc}`,
@@ -495,11 +534,16 @@
     });
   }
 
-  // Initial setup
   requestNotificationPermission();
   renderTasks();
   scheduleNotifications();
 
+  // Service Worker registration for PWA offline caching
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('service-worker.js').then(() => {
+      console.log('Service Worker Registered');
+    }).catch(console.error);
+  }
 </script>
 </body>
 </html>
