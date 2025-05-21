@@ -3,23 +3,40 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-<title>Daily Planner - Mobile Friendly</title>
+<title>Daily Planner - More Features</title>
 <style>
-  /* Reset */
-  *, *::before, *::after {
-    box-sizing: border-box;
-  }
+  *, *::before, *::after { box-sizing: border-box; }
   body {
     margin: 0;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
       Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-    background: #1a73e8;
-    color: #fff;
+    background: var(--bg);
+    color: var(--text);
     min-height: 100vh;
     display: flex;
     flex-direction: column;
     align-items: center;
     padding: 16px;
+    transition: background 0.3s, color 0.3s;
+  }
+
+  :root {
+    --bg: #1a73e8;
+    --text: #fff;
+    --container-bg: #2868f1;
+    --task-bg: #144dbf;
+    --btn-bg: #0f47c1;
+    --btn-bg-hover: #093c99;
+    --completed: #a0a0a0;
+  }
+  .dark {
+    --bg: #121212;
+    --text: #eee;
+    --container-bg: #222;
+    --task-bg: #333;
+    --btn-bg: #444;
+    --btn-bg-hover: #555;
+    --completed: #777;
   }
 
   h1 {
@@ -30,7 +47,7 @@
   }
 
   .container {
-    background: #2868f1;
+    background: var(--container-bg);
     width: 100%;
     max-width: 480px;
     border-radius: 16px;
@@ -58,8 +75,8 @@
     padding: 16px 0;
     font-size: 1.25rem;
     font-weight: 600;
-    color: #fff;
-    background: #0f47c1;
+    color: var(--text);
+    background: var(--btn-bg);
     border: none;
     border-radius: 14px;
     margin-bottom: 14px;
@@ -67,8 +84,8 @@
     transition: background 0.3s ease;
   }
 
-  button:active {
-    background: #093c99;
+  button:hover {
+    background: var(--btn-bg-hover);
   }
 
   button:disabled {
@@ -84,26 +101,33 @@
   }
 
   .task {
-    background: #144dbf;
+    background: var(--task-bg);
     border-radius: 12px;
     padding: 14px 16px;
     margin-bottom: 12px;
     display: flex;
     align-items: center;
-    justify-content: space-between;
     font-size: 1.1rem;
+    gap: 12px;
   }
 
   .task-time {
     font-weight: 700;
-    margin-right: 12px;
     min-width: 65px;
     text-align: center;
+    cursor: pointer;
   }
 
   .task-desc {
     flex-grow: 1;
-    color: #e0eaff;
+    color: var(--text);
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .task.completed .task-desc {
+    text-decoration: line-through;
+    color: var(--completed);
   }
 
   .remove-btn {
@@ -127,19 +151,28 @@
     font-weight: 600;
   }
 
+  #dark-toggle {
+    margin-bottom: 16px;
+    background: transparent;
+    border: 2px solid var(--text);
+    border-radius: 14px;
+    color: var(--text);
+    font-weight: 600;
+  }
+
   /* Scrollbar style for mobile */
   #task-list::-webkit-scrollbar {
     width: 6px;
   }
   #task-list::-webkit-scrollbar-thumb {
-    background: #0f47c1;
+    background: var(--btn-bg);
     border-radius: 4px;
   }
-
 </style>
 </head>
 <body>
   <h1>Daily Planner</h1>
+  <button id="dark-toggle" aria-pressed="false">Toggle Dark/Light Mode</button>
   <div class="container" role="main" aria-label="Daily Schedule Planner">
     <label for="task-time" style="display:none;">Task Time</label>
     <input type="time" id="task-time" aria-describedby="taskTimeDesc" />
@@ -150,16 +183,22 @@
     <div id="taskDescDesc" style="display:none;">Enter your task description here</div>
 
     <button id="add-task-btn">Add Task</button>
-    <button id="voice-task-btn">Add by Voice 🎤</button>
     <button id="random-task-btn">Generate Random Tasks 🎲</button>
-    <button id="export-pdf-btn">Export as PDF 📄</button>
+    <button id="clear-all-btn" style="background:#ff4c4c; margin-bottom:24px;">Clear All Tasks</button>
 
     <div id="task-list" aria-live="polite" aria-relevant="additions removals"></div>
     <div class="stats" id="task-stats" aria-live="polite"></div>
   </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
+  // Theme toggle
+  const darkToggleBtn = document.getElementById('dark-toggle');
+  darkToggleBtn.addEventListener('click', () => {
+    document.body.classList.toggle('dark');
+    const isDark = document.body.classList.contains('dark');
+    darkToggleBtn.setAttribute('aria-pressed', isDark);
+  });
+
   // Initialize tasks
   let tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
 
@@ -178,10 +217,11 @@
     tasks.sort((a,b) => a.time.localeCompare(b.time));
     tasks.forEach((task, idx) => {
       const taskEl = document.createElement('div');
-      taskEl.className = 'task';
+      taskEl.className = 'task' + (task.completed ? ' completed' : '');
+      taskEl.dataset.index = idx;
       taskEl.innerHTML = `
-        <div class="task-time">${task.time}</div>
-        <div class="task-desc">${task.desc}</div>
+        <div class="task-time" tabindex="0" title="Edit time">${task.time}</div>
+        <div class="task-desc" tabindex="0" title="Edit description">${task.desc}</div>
         <button class="remove-btn" aria-label="Remove task ${task.desc}" data-index="${idx}">&times;</button>
       `;
       list.appendChild(taskEl);
@@ -189,6 +229,7 @@
     updateStats();
   }
 
+  // Add task
   function addTask() {
     const timeInput = document.getElementById('task-time');
     const descInput = document.getElementById('task-desc');
@@ -200,78 +241,142 @@
       alert('Please enter a task description.');
       return;
     }
-    tasks.push({ time: timeInput.value, desc: descInput.value.trim() });
+    tasks.push({ time: timeInput.value, desc: descInput.value.trim(), completed: false });
     saveTasks();
     renderTasks();
     timeInput.value = '';
     descInput.value = '';
   }
 
+  // Remove task
   function removeTask(index) {
     tasks.splice(index, 1);
     saveTasks();
     renderTasks();
   }
 
-  // Event delegation for remove buttons
-  document.getElementById('task-list').addEventListener('click', (e) => {
-    if(e.target.classList.contains('remove-btn')){
-      const idx = e.target.getAttribute('data-index');
-      removeTask(parseInt(idx, 10));
-    }
-  });
-
-  // Voice input
-  document.getElementById('voice-task-btn').addEventListener('click', () => {
-    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-      alert('Voice input not supported on your browser.');
-      return;
-    }
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const recognition = new SpeechRecognition();
-    recognition.lang = 'en-US';
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-
-    recognition.onresult = (event) => {
-      const spoken = event.results[0][0].transcript;
-      document.getElementById('task-desc').value = spoken;
-      document.getElementById('task-time').focus();
-    };
-
-    recognition.onerror = (event) => {
-      alert('Voice recognition error: ' + event.error);
-    };
-
-    recognition.start();
-  });
-
-  // Generate random tasks
-  document.getElementById('random-task-btn').addEventListener('click', () => {
-    const sampleTasks = [
-      'Check emails', 'Team meeting', 'Code review', 'Lunch break',
-      'Workout', 'Project planning', 'Client call', 'Write report',
-      'Read book', 'Meditation', 'Prepare presentation', 'Send invoices'
-    ];
-    for(let i = 0; i < 5; i++) {
-      const randHour = (8 + Math.floor(Math.random() * 10)).toString().padStart(2, '0');
-      const randTask = sampleTasks[Math.floor(Math.random() * sampleTasks.length)];
-      tasks.push({ time: randHour + ':00', desc: randTask });
-    }
+  // Toggle completed on click of desc or time
+  function toggleCompleted(index) {
+    tasks[index].completed = !tasks[index].completed;
     saveTasks();
     renderTasks();
-  });
+  }
 
-  // Export PDF
-  document.getElementById('export-pdf-btn').addEventListener('click', () => {
-    const element = document.querySelector('.container');
-    html2pdf().set({margin: 0.5, filename: 'daily_planner.pdf', html2canvas: {scale: 2}}).from(element).save();
-  });
+  // Inline edit
+  function inlineEdit(event) {
+    const el = event.target;
+    if (el.classList.contains('task-desc') || el.classList.contains('task-time')) {
+      const idx = el.parentElement.dataset.index;
+      let input;
+      if (el.classList.contains('task-desc')) {
+        input = document.createElement('input');
+        input.type = 'text';
+        input.value = tasks[idx].desc;
+        input.style.width = '100%';
+      } else {
+        input = document.createElement('input');
+        input.type = 'time';
+        input.value = tasks[idx].time;
+        input.style.width = '100%';
+      }
+      el.replaceWith(input);
+      input.focus();
 
-  // Add task button
+      input.addEventListener('blur', () => {
+        if (input.type === 'text') {
+          tasks[idx].desc = input.value.trim() || tasks[idx].desc;
+        } else {
+          tasks[idx].time = input.value || tasks[idx].time;
+        }
+        saveTasks();
+        renderTasks();
+      });
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') input.blur();
+        else if (e.key === 'Escape') renderTasks();
+      });
+    }
+  }
+
+  // Clear all tasks
+  function clearAllTasks() {
+    if (confirm('Are you sure you want to clear all tasks?')) {
+      tasks = [];
+      saveTasks();
+      renderTasks();
+    }
+  }
+
+  // Random tasks for demo
+  const sampleTasks = [
+    { time: '09:00', desc: 'Morning workout' },
+    { time: '10:30', desc: 'Team meeting' },
+    { time: '12:00', desc: 'Lunch with friend' },
+    { time: '14:00', desc: 'Project work' },
+    { time: '16:30', desc: 'Call client' },
+    { time: '18:00', desc: 'Evening walk' },
+    { time: '20:00', desc: 'Read a book' },
+  ];
+
+  function addRandomTasks() {
+    sampleTasks.forEach(t => {
+      tasks.push({...t, completed: false});
+    });
+    saveTasks();
+    renderTasks();
+  }
+
+  // Notification reminder for upcoming tasks within 30 mins
+  function notifyUpcomingTasks() {
+    if (!("Notification" in window)) return;
+    if (Notification.permission !== "granted") return;
+
+    const now = new Date();
+    tasks.forEach(task => {
+      if (task.completed) return;
+      const [hours, minutes] = task.time.split(':').map(Number);
+      const taskTime = new Date();
+      taskTime.setHours(hours, minutes, 0, 0);
+      const diff = (taskTime - now) / 60000; // minutes diff
+      if (diff > 0 && diff <= 30 && !task.notified) {
+        new Notification('Upcoming Task Reminder', {
+          body: `${task.time} - ${task.desc}`,
+          icon: 'https://cdn-icons-png.flaticon.com/512/270/270798.png',
+        });
+        task.notified = true;
+        saveTasks();
+      }
+    });
+  }
+
+  // Request notification permission on page load
+  if ("Notification" in window) {
+    if (Notification.permission !== "granted" && Notification.permission !== "denied") {
+      Notification.requestPermission();
+    }
+  }
+
+  // Events
   document.getElementById('add-task-btn').addEventListener('click', addTask);
+  document.getElementById('random-task-btn').addEventListener('click', addRandomTasks);
+  document.getElementById('clear-all-btn').addEventListener('click', clearAllTasks);
 
+  document.getElementById('task-list').addEventListener('click', (e) => {
+    if (e.target.classList.contains('remove-btn')) {
+      removeTask(parseInt(e.target.dataset.index));
+    } else if (e.target.classList.contains('task-desc') || e.target.classList.contains('task-time')) {
+      toggleCompleted(parseInt(e.target.parentElement.dataset.index));
+    }
+  });
+
+  document.getElementById('task-list').addEventListener('dblclick', inlineEdit);
+
+  // Initial render
   renderTasks();
+
+  // Check reminders every minute
+  setInterval(notifyUpcomingTasks, 60 * 1000);
+  notifyUpcomingTasks();
 </script>
 </body>
 </html>
