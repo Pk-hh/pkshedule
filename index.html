@@ -1,380 +1,277 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Daily Schedule Planner</title>
-  <link rel="manifest" href="manifest.json" />
-  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3063/3063825.png" />
-  <meta name="theme-color" content="#5b86e5" />
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-  <style>
-    /* Reset & base */
-    * {
-      box-sizing: border-box;
-    }
-    body {
-      margin: 0;
-      font-family: 'Poppins', sans-serif;
-      background: linear-gradient(135deg, #667eea, #764ba2);
-      color: #fff;
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      padding: 3rem 1rem;
-      transition: background 0.5s ease;
-    }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Daily Planner - Mobile Friendly</title>
+<style>
+  /* Reset */
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+      Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    background: #1a73e8;
+    color: #fff;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px;
+  }
 
-    h1 {
-      text-align: center;
-      font-weight: 700;
-      font-size: 3rem;
-      margin-bottom: 2rem;
-      letter-spacing: 1.5px;
-      text-shadow: 0 4px 15px rgba(0,0,0,0.3);
-    }
+  h1 {
+    margin: 20px 0 16px;
+    font-weight: 700;
+    font-size: 1.8rem;
+    text-align: center;
+  }
 
-    /* Container with glass effect */
-    .planner {
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 25px;
-      max-width: 480px;
-      width: 100%;
-      padding: 2.5rem 2rem;
-      box-shadow:
-        0 8px 32px 0 rgba(31, 38, 135, 0.37),
-        0 0 25px 2px rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(15px);
-      -webkit-backdrop-filter: blur(15px);
-      border: 1px solid rgba(255, 255, 255, 0.18);
-    }
+  .container {
+    background: #2868f1;
+    width: 100%;
+    max-width: 480px;
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  }
 
-    input[type="time"],
-    input[type="text"] {
-      width: 100%;
-      padding: 1rem 1.2rem;
-      margin: 0.75rem 0;
-      border-radius: 15px;
-      border: none;
-      outline: none;
-      font-size: 1.1rem;
-      background: rgba(255, 255, 255, 0.15);
-      color: #fff;
-      box-shadow: inset 0 0 8px rgba(255,255,255,0.3);
-      transition: background 0.3s ease;
-    }
-    input[type="time"]::-webkit-calendar-picker-indicator {
-      filter: invert(1);
-    }
+  input[type="time"], input[type="text"] {
+    width: 100%;
+    padding: 16px 12px;
+    border-radius: 12px;
+    border: none;
+    margin-bottom: 16px;
+    font-size: 1.25rem;
+    color: #111;
+    outline: none;
+  }
 
-    input[type="time"]:focus,
-    input[type="text"]:focus {
-      background: rgba(255, 255, 255, 0.25);
-      box-shadow: inset 0 0 12px rgba(255,255,255,0.6);
-    }
+  input[type="text"]::placeholder {
+    color: #666;
+  }
 
-    /* Buttons */
-    button {
-      width: 100%;
-      padding: 1rem;
-      margin-top: 1rem;
-      font-weight: 600;
-      font-size: 1.1rem;
-      border-radius: 20px;
-      border: none;
-      cursor: pointer;
-      color: white;
-      background: linear-gradient(145deg, #6a82fb, #fc5c7d);
-      box-shadow:
-        0 5px 15px rgba(252, 92, 125, 0.5),
-        0 0 20px rgba(106, 130, 251, 0.6);
-      transition: all 0.3s ease;
-      text-shadow: 0 0 6px rgba(0,0,0,0.2);
-    }
-    button:hover {
-      transform: translateY(-3px);
-      box-shadow:
-        0 10px 25px rgba(252, 92, 125, 0.75),
-        0 0 30px rgba(106, 130, 251, 0.85);
-    }
-    button:active {
-      transform: translateY(0);
-      box-shadow:
-        0 3px 10px rgba(252, 92, 125, 0.4),
-        0 0 15px rgba(106, 130, 251, 0.5);
-    }
+  button {
+    width: 100%;
+    padding: 16px 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #fff;
+    background: #0f47c1;
+    border: none;
+    border-radius: 14px;
+    margin-bottom: 14px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+  }
 
-    /* Task list */
-    #task-list {
-      margin-top: 2rem;
-      max-height: 280px;
-      overflow-y: auto;
-      scrollbar-width: thin;
-      scrollbar-color: rgba(252, 92, 125, 0.5) transparent;
-    }
-    #task-list::-webkit-scrollbar {
-      width: 6px;
-    }
-    #task-list::-webkit-scrollbar-thumb {
-      background-color: rgba(252, 92, 125, 0.6);
-      border-radius: 10px;
-    }
+  button:active {
+    background: #093c99;
+  }
 
-    .task {
-      background: rgba(255, 255, 255, 0.12);
-      border-radius: 15px;
-      padding: 1rem 1.5rem;
-      margin-bottom: 1rem;
-      box-shadow: 0 0 15px rgba(252, 92, 125, 0.3);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 1.05rem;
-      letter-spacing: 0.03em;
-      user-select: none;
-      transition: background 0.3s ease;
-    }
-    .task:hover {
-      background: rgba(255, 255, 255, 0.2);
-      box-shadow: 0 0 25px rgba(252, 92, 125, 0.5);
-    }
-    .task-time {
-      font-weight: 700;
-      margin-right: 1rem;
-      color: #ffb8c4;
-      min-width: 70px;
-      text-align: center;
-      font-variant-numeric: tabular-nums;
-    }
-    .task-desc {
-      flex: 1;
-      color: #fff;
-    }
-    .remove-btn {
-      background: transparent;
-      border: none;
-      color: #ff6b81;
-      font-weight: 700;
-      font-size: 1.25rem;
-      cursor: pointer;
-      transition: color 0.3s ease;
-      margin-left: 1rem;
-    }
-    .remove-btn:hover {
-      color: #ff375f;
-      text-shadow: 0 0 8px #ff375f;
-    }
+  button:disabled {
+    background: #4a90e2;
+    cursor: not-allowed;
+  }
 
-    /* Stats */
-    .stats {
-      margin-top: 1.5rem;
-      text-align: center;
-      font-weight: 600;
-      font-size: 1.1rem;
-      letter-spacing: 0.02em;
-      color: #ffd1dc;
-      text-shadow: 0 0 10px rgba(252, 92, 125, 0.5);
-    }
+  #task-list {
+    margin-top: 20px;
+    max-height: 300px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
 
-    /* Dark mode toggle style */
-    .dark-toggle {
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 1.3rem;
-      text-align: center;
-      margin-bottom: 2rem;
-      user-select: none;
-      filter: drop-shadow(0 0 1px rgba(0,0,0,0.7));
-      transition: color 0.3s ease;
-    }
-    .dark-toggle:hover {
-      color: #ff9aa2;
-      text-shadow: 0 0 8px #ff9aa2;
-    }
+  .task {
+    background: #144dbf;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 1.1rem;
+  }
 
-    /* Dark mode body background and text */
-    body.dark-mode {
-      background: linear-gradient(135deg, #141e30, #243b55);
-      color: #ddd;
-    }
-    body.dark-mode .planner {
-      background: rgba(30, 30, 40, 0.7);
-      border-color: rgba(255,255,255,0.15);
-      box-shadow:
-        0 8px 32px rgba(0, 0, 0, 0.8),
-        0 0 25px 2px rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-    }
-    body.dark-mode input[type="time"],
-    body.dark-mode input[type="text"] {
-      background: rgba(255,255,255,0.08);
-      color: #eee;
-      box-shadow: inset 0 0 8px rgba(255,255,255,0.15);
-    }
-    body.dark-mode button {
-      background: linear-gradient(145deg, #ff6a91, #ff3a6d);
-      box-shadow:
-        0 5px 15px rgba(255, 58, 109, 0.6),
-        0 0 20px rgba(255, 106, 145, 0.7);
-    }
-    body.dark-mode button:hover {
-      box-shadow:
-        0 10px 25px rgba(255, 58, 109, 0.9),
-        0 0 30px rgba(255, 106, 145, 0.85);
-    }
-    body.dark-mode .task {
-      background: rgba(255, 255, 255, 0.05);
-      box-shadow: 0 0 15px rgba(255, 58, 109, 0.4);
-    }
-    body.dark-mode .stats {
-      color: #ffa3b1;
-      text-shadow: 0 0 12px rgba(255, 58, 109, 0.6);
-    }
+  .task-time {
+    font-weight: 700;
+    margin-right: 12px;
+    min-width: 65px;
+    text-align: center;
+  }
 
-    /* Responsive tweaks */
-    @media (max-width: 520px) {
-      .planner {
-        padding: 2rem 1.5rem;
-      }
-      h1 {
-        font-size: 2.25rem;
-      }
-      button {
-        font-size: 1rem;
-      }
-    }
-  </style>
+  .task-desc {
+    flex-grow: 1;
+    color: #e0eaff;
+  }
+
+  .remove-btn {
+    background: transparent;
+    border: none;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #ff6b6b;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 8px;
+  }
+  .remove-btn:active {
+    color: #ff3b3b;
+  }
+
+  .stats {
+    margin-top: 16px;
+    font-size: 1.1rem;
+    text-align: center;
+    font-weight: 600;
+  }
+
+  /* Scrollbar style for mobile */
+  #task-list::-webkit-scrollbar {
+    width: 6px;
+  }
+  #task-list::-webkit-scrollbar-thumb {
+    background: #0f47c1;
+    border-radius: 4px;
+  }
+
+</style>
 </head>
 <body>
-  <h1>📅 Daily Schedule Planner</h1>
-  <div class="dark-toggle" onclick="toggleDarkMode()">🌙 Toggle Dark Mode</div>
-  <div class="planner">
-    <input type="time" id="task-time" />
-    <input type="text" id="task-desc" placeholder="Add a new task..." />
-    <button onclick="addTask()">➕ Add Task</button>
-    <button onclick="startVoiceInput()">🎤 Voice Add Task</button>
-    <button onclick="generateRandomTasks()">🎲 Generate Random Tasks</button>
-    <button onclick="exportPDF()">📄 Export as PDF</button>
-    <div id="task-list"></div>
-    <div class="stats" id="task-stats"></div>
+  <h1>Daily Planner</h1>
+  <div class="container" role="main" aria-label="Daily Schedule Planner">
+    <label for="task-time" style="display:none;">Task Time</label>
+    <input type="time" id="task-time" aria-describedby="taskTimeDesc" />
+    <div id="taskTimeDesc" style="display:none;">Select task time</div>
+
+    <label for="task-desc" style="display:none;">Task Description</label>
+    <input type="text" id="task-desc" placeholder="Add a new task..." aria-describedby="taskDescDesc" />
+    <div id="taskDescDesc" style="display:none;">Enter your task description here</div>
+
+    <button id="add-task-btn">Add Task</button>
+    <button id="voice-task-btn">Add by Voice 🎤</button>
+    <button id="random-task-btn">Generate Random Tasks 🎲</button>
+    <button id="export-pdf-btn">Export as PDF 📄</button>
+
+    <div id="task-list" aria-live="polite" aria-relevant="additions removals"></div>
+    <div class="stats" id="task-stats" aria-live="polite"></div>
   </div>
 
-  <script>
-    // Request notification permission upfront
-    if ('Notification' in window && Notification.permission !== 'granted') {
-      Notification.requestPermission();
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+  // Initialize tasks
+  let tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+
+  function saveTasks() {
+    localStorage.setItem('tasks', JSON.stringify(tasks));
+    updateStats();
+  }
+
+  function updateStats() {
+    document.getElementById('task-stats').textContent = `Total tasks: ${tasks.length}`;
+  }
+
+  function renderTasks() {
+    const list = document.getElementById('task-list');
+    list.innerHTML = '';
+    tasks.sort((a,b) => a.time.localeCompare(b.time));
+    tasks.forEach((task, idx) => {
+      const taskEl = document.createElement('div');
+      taskEl.className = 'task';
+      taskEl.innerHTML = `
+        <div class="task-time">${task.time}</div>
+        <div class="task-desc">${task.desc}</div>
+        <button class="remove-btn" aria-label="Remove task ${task.desc}" data-index="${idx}">&times;</button>
+      `;
+      list.appendChild(taskEl);
+    });
+    updateStats();
+  }
+
+  function addTask() {
+    const timeInput = document.getElementById('task-time');
+    const descInput = document.getElementById('task-desc');
+    if (!timeInput.value) {
+      alert('Please select a time for the task.');
+      return;
     }
-
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('service-worker.js')
-          .then(reg => console.log('Service Worker registered!', reg))
-          .catch(err => console.error('SW registration failed:', err));
-      });
+    if (!descInput.value.trim()) {
+      alert('Please enter a task description.');
+      return;
     }
-
-    // Toggle dark mode
-    function toggleDarkMode() {
-      document.body.classList.toggle('dark-mode');
-    }
-
-    // Task storage & rendering
-    let tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
-
-    function saveTasks() {
-      localStorage.setItem('tasks', JSON.stringify(tasks));
-      updateStats();
-    }
-
-    function updateStats() {
-      const total = tasks.length;
-      document.getElementById('task-stats').textContent = `Total tasks: ${total}`;
-    }
-
-    function renderTasks() {
-      const list = document.getElementById('task-list');
-      list.innerHTML = '';
-      tasks.sort((a,b) => a.time.localeCompare(b.time));
-      tasks.forEach((task, idx) => {
-        const taskEl = document.createElement('div');
-        taskEl.className = 'task';
-        taskEl.innerHTML = `
-          <div class="task-time">${task.time}</div>
-          <div class="task-desc">${task.desc}</div>
-          <button class="remove-btn" onclick="removeTask(${idx})" aria-label="Remove task">&times;</button>
-        `;
-        list.appendChild(taskEl);
-      });
-      updateStats();
-    }
-
-    function addTask() {
-      const timeInput = document.getElementById('task-time');
-      const descInput = document.getElementById('task-desc');
-      if (!timeInput.value || !descInput.value.trim()) {
-        alert('Please enter both time and task description.');
-        return;
-      }
-      tasks.push({ time: timeInput.value, desc: descInput.value.trim() });
-      saveTasks();
-      renderTasks();
-      timeInput.value = '';
-      descInput.value = '';
-    }
-
-    function removeTask(index) {
-      tasks.splice(index, 1);
-      saveTasks();
-      renderTasks();
-    }
-
-    // Voice input using Web Speech API
-    function startVoiceInput() {
-      if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-        alert('Sorry, your browser does not support voice input.');
-        return;
-      }
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      const recognition = new SpeechRecognition();
-      recognition.lang = 'en-US';
-      recognition.interimResults = false;
-      recognition.maxAlternatives = 1;
-      recognition.onresult = function(event) {
-        const spoken = event.results[0][0].transcript;
-        document.getElementById('task-desc').value = spoken;
-      };
-      recognition.onerror = function(event) {
-        alert('Error during voice recognition: ' + event.error);
-      };
-      recognition.start();
-    }
-
-    // Generate random tasks for demo
-    function generateRandomTasks() {
-      const sampleTasks = [
-        'Check emails', 'Team meeting', 'Code review', 'Lunch break',
-        'Workout', 'Project planning', 'Client call', 'Write report',
-        'Read book', 'Meditation', 'Prepare presentation', 'Send invoices'
-      ];
-      for (let i = 0; i < 5; i++) {
-        const randTime = String(8 + Math.floor(Math.random() * 10)).padStart(2, '0') + ':00';
-        const randTask = sampleTasks[Math.floor(Math.random() * sampleTasks.length)];
-        tasks.push({ time: randTime, desc: randTask });
-      }
-      saveTasks();
-      renderTasks();
-    }
-
-    // Export as PDF using html2pdf.js
-    function exportPDF() {
-      const element = document.querySelector('.planner');
-      html2pdf().set({margin: 0.5, filename: 'daily_planner.pdf', html2canvas: {scale: 2}}).from(element).save();
-    }
-
+    tasks.push({ time: timeInput.value, desc: descInput.value.trim() });
+    saveTasks();
     renderTasks();
-  </script>
+    timeInput.value = '';
+    descInput.value = '';
+  }
+
+  function removeTask(index) {
+    tasks.splice(index, 1);
+    saveTasks();
+    renderTasks();
+  }
+
+  // Event delegation for remove buttons
+  document.getElementById('task-list').addEventListener('click', (e) => {
+    if(e.target.classList.contains('remove-btn')){
+      const idx = e.target.getAttribute('data-index');
+      removeTask(parseInt(idx, 10));
+    }
+  });
+
+  // Voice input
+  document.getElementById('voice-task-btn').addEventListener('click', () => {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      alert('Voice input not supported on your browser.');
+      return;
+    }
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onresult = (event) => {
+      const spoken = event.results[0][0].transcript;
+      document.getElementById('task-desc').value = spoken;
+      document.getElementById('task-time').focus();
+    };
+
+    recognition.onerror = (event) => {
+      alert('Voice recognition error: ' + event.error);
+    };
+
+    recognition.start();
+  });
+
+  // Generate random tasks
+  document.getElementById('random-task-btn').addEventListener('click', () => {
+    const sampleTasks = [
+      'Check emails', 'Team meeting', 'Code review', 'Lunch break',
+      'Workout', 'Project planning', 'Client call', 'Write report',
+      'Read book', 'Meditation', 'Prepare presentation', 'Send invoices'
+    ];
+    for(let i = 0; i < 5; i++) {
+      const randHour = (8 + Math.floor(Math.random() * 10)).toString().padStart(2, '0');
+      const randTask = sampleTasks[Math.floor(Math.random() * sampleTasks.length)];
+      tasks.push({ time: randHour + ':00', desc: randTask });
+    }
+    saveTasks();
+    renderTasks();
+  });
+
+  // Export PDF
+  document.getElementById('export-pdf-btn').addEventListener('click', () => {
+    const element = document.querySelector('.container');
+    html2pdf().set({margin: 0.5, filename: 'daily_planner.pdf', html2canvas: {scale: 2}}).from(element).save();
+  });
+
+  // Add task button
+  document.getElementById('add-task-btn').addEventListener('click', addTask);
+
+  renderTasks();
+</script>
 </body>
 </html>
